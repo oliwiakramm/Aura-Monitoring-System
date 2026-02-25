@@ -1,0 +1,92 @@
+# ════════════════════════════════════════════════════════════════════
+#  Aura Monitoring System — Docker Compose
+#
+#  Uruchomienie:  docker compose up --build
+#  Zatrzymanie:   docker compose down
+#
+#  Po uruchomieniu:
+#    Dashboard  → http://localhost
+#    Hub API    → http://localhost:8080/api/status
+#    H2 Console → http://localhost:8080/h2-console
+# ════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ──────────────────────────────────────────────────
+  #  AURA HUB — centralny serwer REST API
+  #  Port 8080 widoczny z zewnątrz (Twój komputer)
+  #  Port 8080 wewnątrz kontenera (Spring Boot)
+  # ──────────────────────────────────────────────────
+  aura-hub:
+    build:
+      context: ./AuraHub
+      dockerfile: Dockerfile
+    container_name: aura-hub
+    ports:
+      - "8080:8080"
+    environment:
+      - SENTINEL_AGENT_TIMEOUT_SECONDS=30
+      - SENTINEL_THRESHOLDS_CPU_CRITICAL=0.85
+      - SENTINEL_THRESHOLDS_RAM_CRITICAL_MB=512
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - aura-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────
+  #  AURA DASHBOARD — interfejs użytkownika
+  #  Port 80 widoczny z zewnątrz → http://localhost
+  #  Port 80 wewnątrz kontenera (nginx)
+  #  Nginx proxy przekierowuje /api/ → aura-hub:8080
+  # ──────────────────────────────────────────────────
+  aura-dashboard:
+    build:
+      context: ./AuraDashboard
+      dockerfile: Dockerfile
+    container_name: aura-dashboard
+    ports:
+      - "80:80"
+    depends_on:
+      aura-hub:
+        condition: service_healthy
+    networks:
+      - aura-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────
+  #  AURA AGENT 
+  #  Brak portu — Agent tylko wysyła dane do Huba,
+  #  nic nie serwuje więc nie potrzebuje portu na zewnątrz.
+  #  Wewnątrz sieci Docker widzi aura-hub po nazwie.
+  # ──────────────────────────────────────────────────
+  aura-agent-1:
+    build:
+      context: ./AuraAgent
+      dockerfile: Dockerfile
+    container_name: aura-agent-1
+    environment:
+      - AGENT_ID=agent-docker-1
+    volumes:
+      - ./AuraAgent/config.json:/app/config.json:ro
+    depends_on:
+      aura-hub:
+        condition: service_healthy
+    networks:
+      - aura-net
+    restart: unless-stopped
+
+
+# ──────────────────────────────────────────────────
+#  SIEĆ WEWNĘTRZNA
+#  Kontenery widzą się przez nazwy serwisów.
+#  Agent łączy się z Hubem przez "aura-hub:8080"
+#  bez potrzeby otwierania portów na zewnątrz.
+# ──────────────────────────────────────────────────
+networks:
+  aura-net:
+    driver: bridge

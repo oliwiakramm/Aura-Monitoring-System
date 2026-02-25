@@ -1,0 +1,7 @@
+{
+  "agentId": "agent-DEV",
+  "hubUrl": "http://aura-hub:8080/api/metrics",
+  "monitoredUrl": "https://www.dynatrace.com",
+  "intervalSeconds": 10,
+  "httpTimeoutSeconds": 5
+}

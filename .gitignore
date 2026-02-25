@@ -1,0 +1,12 @@
+
+aura-hub/target/
+aura-agent/target/
+
+
+.idea/
+*.iml
+.vscode/
+*.class
+
+.DS_Store
+Thumbs.db
