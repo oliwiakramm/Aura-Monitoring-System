@@ -9,7 +9,6 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 RUN groupadd -r aura && useradd -r -g aura aura
 
-# Używamy gwiazdki, żeby uniknąć problemów z wersją
 COPY --from=build /app/target/*.jar app.jar
 
 RUN chown aura:aura app.jar
