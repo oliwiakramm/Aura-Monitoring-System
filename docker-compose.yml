@@ -1,10 +1,9 @@
 # ════════════════════════════════════════════════════════════════════
 #  Aura Monitoring System — Docker Compose
 #
-#  Uruchomienie:  docker compose up --build
-#  Zatrzymanie:   docker compose down
+#  Start:  docker compose up --build
+#  Stop:   docker compose down
 #
-#  Po uruchomieniu:
 #    Dashboard  → http://localhost
 #    Hub API    → http://localhost:8080/api/status
 #    H2 Console → http://localhost:8080/h2-console
@@ -13,10 +12,8 @@
 services:
 
   # ──────────────────────────────────────────────────
-  #  AURA HUB — centralny serwer REST API
-  #  Port 8080 widoczny z zewnątrz (Twój komputer)
-  #  Port 8080 wewnątrz kontenera (Spring Boot)
-  # ──────────────────────────────────────────────────
+  #  AURA HUB — REST API server
+  
   aura-hub:
     build:
       context: ./AuraHub
@@ -39,11 +36,8 @@ services:
     restart: unless-stopped
 
   # ──────────────────────────────────────────────────
-  #  AURA DASHBOARD — interfejs użytkownika
-  #  Port 80 widoczny z zewnątrz → http://localhost
-  #  Port 80 wewnątrz kontenera (nginx)
-  #  Nginx proxy przekierowuje /api/ → aura-hub:8080
-  # ──────────────────────────────────────────────────
+  #  AURA DASHBOARD — user interface
+
   aura-dashboard:
     build:
       context: ./AuraDashboard
@@ -60,10 +54,7 @@ services:
 
   # ──────────────────────────────────────────────────
   #  AURA AGENT 
-  #  Brak portu — Agent tylko wysyła dane do Huba,
-  #  nic nie serwuje więc nie potrzebuje portu na zewnątrz.
-  #  Wewnątrz sieci Docker widzi aura-hub po nazwie.
-  # ──────────────────────────────────────────────────
+  
   aura-agent-1:
     build:
       context: ./AuraAgent
@@ -81,12 +72,6 @@ services:
     restart: unless-stopped
 
 
-# ──────────────────────────────────────────────────
-#  SIEĆ WEWNĘTRZNA
-#  Kontenery widzą się przez nazwy serwisów.
-#  Agent łączy się z Hubem przez "aura-hub:8080"
-#  bez potrzeby otwierania portów na zewnątrz.
-# ──────────────────────────────────────────────────
 networks:
   aura-net:
     driver: bridge
